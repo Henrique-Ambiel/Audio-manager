@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Assertions;
 
 public class IPresistentSingleton<T> : MonoBehaviour where T : MonoBehaviour
 {
