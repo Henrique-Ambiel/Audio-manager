@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -79,8 +80,53 @@ public class AudioManager
         if (music != null) 
         {
             musicSource.Stop();
-
+            musicSource.loop = isLoop;
+            musicSource.volume = 1.0f;
+            musicSource.clip = music;
+            musicSource.Play();
         }
+    }
+
+    public void StopMusic()
+    {
+        if (musicSource.isPlaying) 
+        { 
+            musicSource.Stop(); 
+        }
+    }
+
+    public void PauseMusic(bool isPause)
+    {
+        if (isPause == true)
+        {
+           musicSource.Pause();
+        }
+        else
+        {
+            musicSource.UnPause();
+        }
+    }
+
+    public bool IsPlayingMusic()
+    {
+        return musicSource.isPlaying;
+    }
+
+    private IEnumerator FadeMusic(bool isFadeIn, float time)
+    {
+       float deltaTime = 0.0f;
+       float target = isFadeIn ? 1.0f : 0.0f;
+       float current = musicSource.volume;
+
+
+        while (deltaTime < time) 
+        {
+            deltaTime += Time.deltaTime;
+            musicSource.volume = Mathf.Lerp(current, target, deltaTime / time);
+            yield return null;
+        }
+
+        musicSource.volume = target;
     }
 }
 
