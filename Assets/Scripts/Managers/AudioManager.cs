@@ -152,12 +152,53 @@ public class AudioManager
         audioSourceInstance.transform.SetParent(GameManager.Instance.transform);
 
         for (int i = 0; i < poolSize; i++)
-        { 
-            AudioSource source = audioSourceInstance.AddComponent<AudioSource>();
-            source.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SoundEfects")[0];
-            source.playOnAwake = false;
-            sfxSourcePool.Add(source);
+        {
+            CreateAudioInstance();
         }
+    }
+
+    public void PlaySfx(AudioClip sfx, float volume = 1.0f, float pitch = 1.0f)
+    {
+        InternalPlaySFX(sfx, volume, pitch, false);
+    }
+
+    public void PlaySfx(AudioCue sfx)
+    {
+        InternalPlaySFX(sfx.GetSample(), sfx.GetVolume(), sfx.GetPitch(), false);
+    }
+
+    public void PlaySfxInLoop(AudioClip sfx, float volume = 1.0f, float pitch = 1.0f)
+    {
+        InternalPlaySFX(sfx, volume, pitch, true);
+    }
+
+    public void PauseSfx(bool isPause)
+    {
+       if (isPause)
+        {
+            sfxSource.Pause();
+            for (int i = 0; i < sfxSourcePool.Count; i++)
+            {
+                sfxSourcePool[i].Pause();
+            }
+        }
+        else
+        {
+            sfxSource.UnPause();
+            for (int i = 0; i < sfxSourcePool.Count; i++)
+            {
+                sfxSourcePool[i].UnPause();
+            }
+        }
+    }
+
+    public void StopSfx()
+    {
+       sfxSource.Stop();
+       for (int i = 0; i < sfxSourcePool.Count; i++)
+       {
+            sfxSourcePool[i].Stop();
+       }
     }
 
     private void InternalPlaySFX(AudioClip sxf, float volume, float pitch, bool isLoop = false)
@@ -177,6 +218,11 @@ public class AudioManager
             }
         }
 
+        if(index == -1)
+        {
+           index = CreateAudioInstance();
+        }
+
         AudioSource result = index == -1 ? sfxSource : sfxSourcePool[index];
 
         result.volume = volume;
@@ -193,5 +239,15 @@ public class AudioManager
             result.PlayOneShot(sxf);
         }
        
+    }
+
+    private int CreateAudioInstance()
+    {
+        AudioSource source = audioSourceInstance.AddComponent<AudioSource>();
+        source.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SoundEfects")[0];
+        source.playOnAwake = false;
+        sfxSourcePool.Add(source);
+
+        return sfxSourcePool.Count - 1;
     }
 }
