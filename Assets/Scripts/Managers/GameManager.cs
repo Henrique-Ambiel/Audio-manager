@@ -4,4 +4,11 @@ public class GameManager : IPresistentSingleton<GameManager>
 {
     // Instância do AudioManager, responsável por gerenciar a reprodução de áudio no jogo.
     public AudioManager audioManager = new AudioManager();
+
+    protected override void Awake()
+    {
+        base.Awake();
+        
+        audioManager.InitializePool();
+    }
 }

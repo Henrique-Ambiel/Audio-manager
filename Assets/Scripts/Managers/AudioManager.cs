@@ -57,19 +57,23 @@ public class AudioManager
     private AudioSource sfxSource = null;
 
     [SerializeField]
-    private List<AudioSource> sfxSourcePool = new List<AudioSource>();
+    private int poolSize = 10;
 
+    [SerializeField]
+    private List<AudioSource> sfxSourcePool = new List<AudioSource>();
+    private GameObject audioSourceInstance;
+
+    /*
+     * MUSIC
+     */
 
     public void PlayMusic(AudioClip music, bool isLoop = true)
     {
         if (music != null)
         {
             musicSource.Stop();
-
             musicSource.loop = isLoop;
-
             musicSource.volume = 1.0f;
-
             musicSource.clip = music;
             musicSource.Play();
         }
@@ -109,7 +113,6 @@ public class AudioManager
 
         musicSource.clip = music;
         musicSource.volume = 0.0f;
-
         musicSource.Play();
 
         GameManager.Instance.StartCoroutine(FadeMusic(true, time));
@@ -126,9 +129,7 @@ public class AudioManager
     private IEnumerator FadeMusic(bool isFadeIn, float time)
     {
         float deltaTime = 0.0f;
-
         float target = isFadeIn ? 1.0f : 0.0f;
-
         float current = musicSource.volume;
 
         while (deltaTime < time)
@@ -141,14 +142,56 @@ public class AudioManager
         musicSource.volume = target;
     }
 
-    public void IntializePool()
+    /*
+     * SFX
+     */
+
+    public void InitializePool()
     {
-        for (int i = 0; i < 10; i++)
-        {
-            GameObject newInstance = new GameObject("AudioSourceInstance");
-            newInstance.transform.SetParent(GameManager.Instance.transform);
-            AudioSource source = newInstance.AddComponent<AudioSource>();
+        audioSourceInstance = new GameObject("AudioSourceInstance");
+        audioSourceInstance.transform.SetParent(GameManager.Instance.transform);
+
+        for (int i = 0; i < poolSize; i++)
+        { 
+            AudioSource source = audioSourceInstance.AddComponent<AudioSource>();
             source.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SoundEfects")[0];
+            source.playOnAwake = false;
+            sfxSourcePool.Add(source);
         }
+    }
+
+    private void InternalPlaySFX(AudioClip sxf, float volume, float pitch, bool isLoop = false)
+    {
+        int index = -1;
+
+
+        if(sfxSource.isPlaying)
+        {
+            for (int i = 0; i < sfxSourcePool.Count; i++)
+            {
+                if (!sfxSourcePool[i].isPlaying)
+                {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        AudioSource result = index == -1 ? sfxSource : sfxSourcePool[index];
+
+        result.volume = volume;
+        result.pitch = pitch;
+        result.loop = isLoop;
+
+        if (isLoop)
+        {
+            result.clip = sxf;
+            result.Play();
+        }
+        else
+        {
+            result.PlayOneShot(sxf);
+        }
+       
     }
 }
