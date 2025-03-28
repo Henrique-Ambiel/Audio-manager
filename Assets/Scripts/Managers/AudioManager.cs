@@ -191,6 +191,17 @@ public class AudioManager
         return InternalPlaySFX(sfx, volume, pitch, true);
     }
 
+    // Toca um efeito sonoro por um tempo limitado.
+    public void PlaySfxForTime(AudioClip sfx, float timeToPlay, float volume = 1.0f, float pitch = 1.0f)
+    {
+        GameManager.Instance.StartCoroutine(InternalPlaySfxForTime(sfx, timeToPlay, volume, pitch));
+    }
+
+    public void PlaySfxForTime(AudioCue sfx, float timeToPlay)
+    {
+        GameManager.Instance.StartCoroutine(InternalPlaySfxForTime(sfx.GetSample(), timeToPlay, sfx.GetVolume(), sfx.GetPitch()));
+    }
+
     // Toca um efeito sonoro em loop a partir de um AudioCue.
     public AudioStop PlaySfxInLoop(AudioCue sfx)
     {
@@ -219,13 +230,34 @@ public class AudioManager
     }
 
     // Para todos os efeitos sonoros.
-    public void StopSfx()
+    public void StopAllSfx()
     {
         sfxSource.Stop();
         for (int i = 0; i < sfxSourcePool.Count; i++)
         {
             sfxSourcePool[i].Stop();
         }
+    }
+
+    // Ajusta o volume master (geral).
+    public void SetMasterVolume(float volume)
+    {
+        volume = Mathf.Clamp(volume, 0.001f, 1.0f);
+        audioMixer.SetFloat("Master", Mathf.Log10(volume) * 20);
+    }
+
+    // Ajusta o volume da música.
+    public void SetMusicVolume(float volume)
+    {
+        volume = Mathf.Clamp(volume, 0.001f, 1.0f);
+        audioMixer.SetFloat("Music", Mathf.Log10(volume) * 20);
+    }
+
+    // Ajusta o volume dos efeitos sonoros.
+    public void SetSfxVolume(float volume)
+    {
+        volume = Mathf.Clamp(volume, 0.001f, 1.0f);
+        audioMixer.SetFloat("SFX", Mathf.Log10(volume) * 20);
     }
 
     // Função interna para tocar efeitos sonoros, podendo ser em loop ou não.
@@ -274,11 +306,20 @@ public class AudioManager
         return result;
     }
 
+    // Corrotina que toca o efeito sonoro por um tempo específico e depois para.
+    private IEnumerator InternalPlaySfxForTime(AudioClip sfx, float timeToPlay, float volume = 1.0f, float pitch = 1.0f)
+    {
+        AudioStop audioStop = InternalPlaySFX(sfx, volume, pitch, true);
+        yield return new WaitForSeconds(timeToPlay);
+
+        audioStop();
+    }
+
     // Cria uma nova instância de AudioSource e a adiciona ao pool.
     private int CreateAudioInstance()
     {
         AudioSource source = audioSourceInstance.AddComponent<AudioSource>();  // Cria a fonte de áudio.
-        source.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SoundEfects")[0];  // Atribui o grupo de mixer de efeitos sonoros.
+        source.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SFX")[0];  // Atribui o grupo de mixer de efeitos sonoros.
         source.playOnAwake = false;  // Não toca o áudio automaticamente.
         sfxSourcePool.Add(source);  // Adiciona a fonte ao pool.
 
