@@ -1,24 +1,61 @@
-// A classe GameManager herda de IPresistentSingleton<GameManager>, 
-// garantindo que exista apenas uma instância do GameManager no jogo, utilizando o padrão Singleton.
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+using AsyncOperation = UnityEngine.AsyncOperation;
+
+
+public class Events
+{
+    [System.Serializable]
+    public class LoadLevelComplete : UnityEvent<string> { }
+}
+
+
 public class GameManager : IPresistentSingleton<GameManager>
 {
-    // Instância do AudioManager, responsável por gerenciar a reprodução de áudio no jogo.
     public AudioManager audioManager = new AudioManager();
 
-    // Método chamado ao iniciar o GameManager.
-    protected override void Awake()
+    private string currentLevel;
+    private Events.LoadLevelComplete onLoadLevrlComplete = new Events.LoadLevelComplete();
+
+    public string CurrentLevel { get => currentLevel; }
+
+    private void Start()
     {
-        base.Awake();  // Chama o método Awake da classe base (IPresistentSingleton).
+        currentLevel = SceneManager.GetActiveScene().name;
+    }
 
-        // Inicializa o pool de fontes de áudio para os efeitos sonoros.
-        audioManager.InitializePool();
+    public void RegisterLevelLoadEvent(UnityAction<string> callback)
+    {
+        onLoadLevrlComplete.AddListener(callback);  
+    }
 
-        // Chama o método PlaySfxInLoop do AudioManager para tocar um efeito sonoro em loop. 
-        // Neste caso, o parâmetro `null` significa que não foi passado um efeito específico,
-        // então deve ser substituído por um efeito sonoro válido ou um AudioCue.
-        AudioManager.AudioStop stopFrog = audioManager.PlaySfxInLoop(null);
+    public void UnregisterLevelLoadEvent(UnityAction<string> callback)
+    {
+        onLoadLevrlComplete.RemoveListener(callback);
+    }
 
-        // Chama a função de stop retornada por PlaySfxInLoop para parar o áudio.
-        stopFrog();
+    public void ClearLevelLoadEvents()
+    {
+        onLoadLevrlComplete.RemoveAllListeners();
+    }
+
+    public void LoadLevel(string levelName)
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(levelName, LoadSceneMode.Single);
+        if(asyncLoad == null)
+        {
+#if UNITY_EDITOR
+            Debug.LogError("GameManager: LoadLevel - Falha ao carregar a cena " + levelName);
+#endif
+            return;
+        }
+        asyncLoad.completed += (AsyncOperation) =>
+        {
+            onLoadLevrlComplete.Invoke(levelName);
+        };
+
+
+        currentLevel = levelName;
     }
 }
